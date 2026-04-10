@@ -14,7 +14,7 @@
 
 ---
 
-## Ce que Karpathy dit qui a tout structuré
+## Ce que [Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) dit qui a tout structuré
 
 > *"Le wiki est un artefact persistant qui s'enrichit par accumulation. Les renvois entre pages sont déjà en place. Les contradictions ont déjà été signalées. La synthèse reflète déjà tout ce que vous avez lu."*
 

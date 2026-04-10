@@ -8,7 +8,7 @@
 
 Outil LLM piloté qui maintient une base de connaissances persistante
 en fichiers Markdown, entre l'utilisateur et ses sources brutes.
-Concept source : Karpathy LLM Wiki.
+Concept source : [Karpathy LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 
 Architecture agentique : reportée en V2-9 — voir SPECS.md.
 
