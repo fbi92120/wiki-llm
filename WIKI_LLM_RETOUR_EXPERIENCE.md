@@ -350,5 +350,24 @@ accepte des snapshots avant/apres pour les checks comparatifs.
 
 ---
 
+## 11. Temps de projet
+
+| Phase | Duree | Outil |
+|---|---|---|
+| Co-construction des specs | ~6h30 | Claude.ai (sessions conversationnelles) |
+| Vibe coding (implementation) | ~3h50 | Claude Code (Opus) |
+| **Total** | **~10h20** | |
+
+Le ratio specs/code en temps est **1.7:1** — plus de temps a definir
+qu'a implementer. C'est le resultat attendu de la methode : les specs
+eliminent les ambiguites, le code devient mecanique.
+
+Le temps de vibe coding est estime depuis les timestamps git
+(voir section 6 de `explication-methode.md` pour la methode de mesure).
+Les prochaines sessions seront mesurees automatiquement par les hooks
+`UserPromptSubmit` + `Stop`.
+
+---
+
 *Ce document est destine a etre attache au projet Claude.ai comme
 reference de methode et capitalisation issue du MVP Wiki LLM.*
