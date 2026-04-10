@@ -261,6 +261,24 @@ Confirmation externe que la direction choisie est la bonne — pas une expérime
 
 Ratio specs/code : **1 ligne de spec pour 2.7 lignes de Python**. Les specs cadrent, le code exécute. Tests : 20/20 (12 contrats + 8 smoke).
 
+### Mesure du temps de vibe coding
+
+Le temps passé dans Claude Code est mesuré automatiquement par deux hooks
+configurés dans `~/.claude/settings.json` :
+
+- **`UserPromptSubmit`** : chaque envoi de prompt enregistre un timestamp
+  dans `/tmp/claude-prompt-times`.
+- **`Stop`** : à la fin de session, calcule le temps actif = somme des
+  intervalles entre prompts consécutifs **inférieurs à 10 minutes**.
+  Les pauses longues (nuit, repas, réflexion) sont ignorées.
+  Affiche : `Vibe coding: X min (HH:MM -> HH:MM)`.
+
+Ce mécanisme résiste aux sessions laissées ouvertes pendant la nuit —
+seul le temps d'interaction réel est compté.
+
+Le temps de co-construction des specs (sur Claude.ai) est mesuré
+séparément, par l'humain.
+
 ---
 
 ## Ce qui reste à faire avant SPECS.md
