@@ -3,3 +3,5 @@ config.yml
 *.pyc
 __pycache__/
 .DS_Store
+.pytest_cache/
+wiki/.obsidian/

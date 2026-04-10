@@ -9,7 +9,7 @@
 
 | # | Décision | Choix retenu | Raison |
 |---|---|---|---|
-| 1 | Structure des dossiers | Tout dans le vault Obsidian | Vue graphe complète, sources et wiki reliés visuellement |
+| 1 | Structure des dossiers | `wiki/` dans le projet git, ouvert comme vault Obsidian | Git et Obsidian cohabitent sans friction — Obsidian lit `~/Projects/wiki-llm/wiki/` directement |
 | 2 | Convention de nommage | Dossiers par type dans `wiki/` | Séparation claire sources brutes / wiki |
 | 3 | Nommage des pages wiki | Sous-dossiers `sources/` `concepts/` `syntheses/` | Volume prévu élevé, structure qui tient dans la durée |
 | 4 | Gestion du log | Log global + journal local dans chaque concept | Deux niveaux complémentaires : chronologie globale + historique par page |
@@ -21,25 +21,31 @@
 
 ---
 
-## Structure cible du vault Obsidian
+## Vault Obsidian
+
+**Chemin** : `~/Projects/wiki-llm/wiki/` — ouvert directement comme vault
+via *Open folder as vault*.
+
+Obsidian lit `wiki/` tel quel, sans rien déplacer. CLAUDE.md, SPECS.md
+et le code source ne sont pas visibles dans Obsidian — ils n'en ont pas
+besoin pour la lecture du wiki.
 
 ```
-Obsidian vault/
-    YT-Knowledge/               → sources brutes YT Extractor, immuables
-    wiki/
-        index.md                → catalogue de toutes les pages
-        log.md                  → journal chronologique global, append-only
-        contradictions.md       → toutes les contradictions détectées
-        sources/
-            deux-philosophies.md
-            rationnement.md
-            computer-use.md
-            [...]
-        concepts/
-            agents-ia.md        → inclut ## Journal des mises à jour
-            architecture-confiance.md
-            [...]
-        syntheses/              → pages produites à la demande de l'humain
+wiki/   ← vault Obsidian
+    index.md                → catalogue de toutes les pages
+    log.md                  → journal chronologique global, append-only
+    contradictions.md       → toutes les contradictions détectées
+    sources/
+        deux-philosophies.md
+        rationnement.md
+        computer-use.md
+        [...]
+    concepts/
+        agents-ia.md        → inclut ## Journal des mises à jour
+        architecture-confiance.md
+        [...]
+    syntheses/              → pages produites à la demande de l'humain
+    a-traiter/              → sources insuffisantes en attente
 ```
 
 ---
@@ -92,7 +98,7 @@ Structure hétérogène — workflow distinct du Workflow A.
 
 - Claude Code écrit **uniquement** dans `wiki/` — jamais dans `YT-Knowledge/` ni ailleurs dans le vault
 - Les sources brutes sont immuables — Claude Code lit, jamais modifie
-- Le vault Obsidian est sur iCloud — choix délibéré documenté ici, pas un oubli
+- Le vault Obsidian pointe sur `~/Projects/wiki-llm/wiki/` — local, versionné git
 - Pour le MVP : sources uniquement issues de YT Extractor (données publiques)
 - Notes Evernote : confidentialité traitée dans le projet Export Evernote
 

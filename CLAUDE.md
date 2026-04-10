@@ -73,41 +73,40 @@ Comportement attendu :
 
 ## Vault Obsidian
 
-/Users/USER/Library/Mobile Documents/iCloud~md~obsidian/Documents/
+~/Projects/wiki-llm/wiki/ — ouvert directement comme vault Obsidian
+via "Open folder as vault". Git et Obsidian cohabitent sans friction.
 
 ## Stack
 
 - LLM : Claude (Claude.ai + Claude Code en tandem)
-- Interface lecture : Obsidian
+- Interface lecture : Obsidian (vault = wiki/)
 - Format : Markdown
-- Stockage : local, iCloud sync
+- Stockage : local, versionné avec git
 
 ---
 
 ## Structure cible du vault
 
 ```
-Obsidian vault/
-    YT-Knowledge/               → sources brutes YT Extractor, immuables
-    wiki/
-        index.md                → catalogue de toutes les pages
-        log.md                  → journal chronologique global, append-only
-        contradictions.md       → toutes les contradictions détectées
-        sources/
-            deux-philosophies.md
-            rationnement.md
-            computer-use.md
-            [...]
-        concepts/
-            agents-ia.md        → inclut ## Journal des mises à jour
-            architecture-confiance.md
-            [...]
-        a-traiter/              → sources insuffisantes en attente
-        syntheses/              → pages produites à la demande de l'humain
+wiki/   ← vault Obsidian (~/Projects/wiki-llm/wiki/)
+    index.md                → catalogue de toutes les pages
+    log.md                  → journal chronologique global, append-only
+    contradictions.md       → toutes les contradictions détectées
+    sources/
+        deux-philosophies.md
+        rationnement.md
+        computer-use.md
+        [...]
+    concepts/
+        agents-ia.md        → inclut ## Journal des mises à jour
+        architecture-confiance.md
+        [...]
+    a-traiter/              → sources insuffisantes en attente
+    syntheses/              → pages produites à la demande de l'humain
 ```
 
-Claude Code n'a le droit d'écrire **que** dans `wiki/`. `YT-Knowledge/`
-et le reste du vault sont en lecture seule.
+Claude Code n'a le droit d'écrire **que** dans `wiki/`.
+Les fiches sources brutes (wiki-test/, YT-Knowledge/) sont en lecture seule.
 
 ---
 

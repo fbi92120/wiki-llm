@@ -120,7 +120,7 @@ vivante.
 - Format : Markdown
 - Stockage : local, iCloud sync
 - Versioning : git local sur `wiki/`
-- Vault path : `/Users/USER/Library/Mobile Documents/iCloud~md~obsidian/Documents/`
+- Vault path : `~/Projects/wiki-llm/wiki/` (ouvert directement comme vault Obsidian)
 
 ### Trois couches
 
