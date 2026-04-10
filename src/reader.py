@@ -73,7 +73,15 @@ _META_RE = re.compile(
 )
 
 # En-tête d'un concept : #### Nom du concept [▶ 00:00:45](https://...)
-_CONCEPT_HEADER_RE = re.compile(r"^####\s+(.+?)(?:\s*\[▶[^\]]*\]\([^)]*\))?\s*$")
+# Formes reconnues :
+#   [▶ HH:MM:SS](url)   — format natif complet
+#   [▶ HH:MM:SS]        — sans URL
+#   ▶ HH:MM:SS          — timestamp nu
+_CONCEPT_HEADER_RE = re.compile(
+    r"^####\s+(.+?)"
+    r"(?:\s*\[▶[^\]]*\](?:\([^)]*\))?|\s*▶\s*\d{2}:\d{2}:\d{2})?"
+    r"\s*$"
+)
 
 # Item d'une question ouverte numérotée : "1. ...", "2.  ..."
 _QUESTION_ITEM_RE = re.compile(r"^\s*\d+\.\s+(.*)")
