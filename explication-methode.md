@@ -251,6 +251,18 @@ Confirmation externe que la direction choisie est la bonne — pas une expérime
 
 ---
 
+## Bilan chiffré du MVP
+
+| Catégorie | Total |
+|---|---|
+| Lignes Python | 3 533 |
+| Fonctions Python | 77 (42 src/ + 5 orchestrateur + 30 tests) |
+| Lignes de specs | 1 286 |
+
+Ratio specs/code : **1 ligne de spec pour 2.7 lignes de Python**. Les specs cadrent, le code exécute. Tests : 20/20 (12 contrats + 8 smoke).
+
+---
+
 ## Ce qui reste à faire avant SPECS.md
 
 - Étape 2 suite — usage réel complet (interventions, conseil, formation)
