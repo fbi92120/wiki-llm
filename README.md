@@ -6,6 +6,8 @@ This is **not** an autonomous agent. Every operation is triggered by a human, su
 
 ## How it works
 
+Concept inspired by [Andrej Karpathy's LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
+
 Source files (YouTube transcript summaries in `-reduit.md` format) are ingested into a structured wiki. Each ingestion creates or updates source pages, concept pages, an index, a changelog, and a contradiction tracker. The wiki is designed to be read in [Obsidian](https://obsidian.md/) for graph navigation and clickable links.
 
 ## Prerequisites

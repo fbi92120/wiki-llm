@@ -6,6 +6,8 @@ Ce n'est **pas** un agent autonome. Chaque opération est déclenchée par l'hum
 
 ## Fonctionnement
 
+Concept inspiré par le [LLM Wiki d'Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
+
 Les fichiers sources (résumés de transcripts YouTube au format `-reduit.md`) sont ingérés dans un wiki structuré. Chaque ingestion crée ou met à jour des pages source, des pages concept, un index, un journal et un suivi des contradictions. Le wiki est conçu pour être lu dans [Obsidian](https://obsidian.md/) (vue graphe, liens cliquables).
 
 ## Prérequis
