@@ -1,0 +1,15 @@
+# config.yml.example — Wiki LLM
+#
+# Copier ce fichier en config.yml et adapter les chemins :
+#   cp config.yml.example config.yml
+#
+# config.yml est dans .gitignore — jamais versionne.
+
+# Chemin absolu du vault Obsidian contenant YT-Knowledge/
+vault_path: /chemin/vers/votre/vault/obsidian/
+
+# Nom du dossier de sources brutes dans le vault
+yt_knowledge_dir: YT-Knowledge
+
+# Racine du wiki (relatif au projet ou absolu)
+wiki_root: wiki
