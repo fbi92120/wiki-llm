@@ -27,22 +27,30 @@ No runtime dependencies beyond the Python standard library.
 
 ## Usage
 
+Three ingestion modes, auto-detected from the argument:
+
 ```bash
-python3 ingestwiki.py <path-to-fiche-reduit.md>
+./ingestwiki.py <file.md>           # mode 1 — single file (full path or filename)
+./ingestwiki.py <folder-name>       # mode 2 — YT-Knowledge/ subfolder
+./ingestwiki.py                     # mode 3 — entire vault
 ```
+
+Mode 1 accepts a full path, a relative path, or just a filename. If the filename is not found locally, the tool searches all subfolders of `YT-Knowledge/` (path from `config.yml`). If multiple matches are found, it displays a numbered list and asks for confirmation.
+
+Modes 2 and 3 automatically skip already-ingested files, produce a single git commit at the end, and append a batch summary to `log.md`.
 
 | Option | Description |
 |---|---|
 | `--wiki-root PATH` | Wiki root directory (default: `./wiki/`) |
-| `--source-dir PATH` | Raw sources directory for R6 integrity check |
-| `--question TEXT` | Override the auto-generated cross-cutting question |
 | `--no-commit` | Skip the git commit step |
 | `--no-validate` | Skip post-ingestion validation |
 
-### Example
+### Examples
 
 ```bash
-python3 ingestwiki.py wiki-test/2026-03-24-40-millions-de-vues-en-12h-claude-computer-use-enterre-le-travail-de-bureau-reduit.md
+./ingestwiki.py fiche.md                     # search by filename in YT-Knowledge/
+./ingestwiki.py ia-et-strategie-le-samourai   # ingest all files in this subfolder
+./ingestwiki.py                               # ingest entire vault (skip existing)
 ```
 
 ### Running tests

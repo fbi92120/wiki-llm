@@ -27,22 +27,30 @@ Aucune dépendance runtime en dehors de la bibliothèque standard Python.
 
 ## Utilisation
 
+Trois modes d'ingestion, detectes automatiquement depuis l'argument :
+
 ```bash
-python3 ingestwiki.py <chemin-vers-fiche-reduit.md>
+./ingestwiki.py <fichier.md>        # mode 1 — fiche unique (chemin complet ou nom)
+./ingestwiki.py <nom-dossier>       # mode 2 — sous-dossier YT-Knowledge/
+./ingestwiki.py                     # mode 3 — vault complet
 ```
+
+Le mode 1 accepte un chemin complet, un chemin relatif, ou juste un nom de fichier. Si le fichier n'est pas trouve localement, l'outil cherche dans tous les sous-dossiers de `YT-Knowledge/` (chemin depuis `config.yml`). Si plusieurs correspondances sont trouvees, il affiche une liste numerotee et demande confirmation.
+
+Les modes 2 et 3 ignorent automatiquement les fiches deja ingerees, produisent un seul commit git en fin de batch, et ajoutent un resume batch dans `log.md`.
 
 | Option | Description |
 |---|---|
-| `--wiki-root PATH` | Racine du wiki (défaut : `./wiki/`) |
-| `--source-dir PATH` | Dossier des sources brutes pour la vérification d'intégrité R6 |
-| `--question TEXT` | Remplace la question transversale auto-générée |
+| `--wiki-root PATH` | Racine du wiki (defaut : `./wiki/`) |
 | `--no-commit` | Ne pas faire le commit git |
 | `--no-validate` | Ne pas lancer la validation post-ingestion |
 
-### Exemple
+### Exemples
 
 ```bash
-python3 ingestwiki.py wiki-test/2026-03-24-40-millions-de-vues-en-12h-claude-computer-use-enterre-le-travail-de-bureau-reduit.md
+./ingestwiki.py fiche.md                     # recherche par nom dans YT-Knowledge/
+./ingestwiki.py ia-et-strategie-le-samourai   # ingere tout le sous-dossier
+./ingestwiki.py                               # ingere le vault entier (skip existants)
 ```
 
 ### Lancer les tests
