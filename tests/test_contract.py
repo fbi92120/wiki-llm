@@ -46,6 +46,7 @@ from src.concept_writer import write_concept_page  # noqa: E402
 from src.index_manager import update_index  # noqa: E402
 from src.log_manager import append_log_entry  # noqa: E402
 from src.contradiction_manager import record_contradiction  # noqa: E402
+from ingestwiki import ingest, ingest_batch  # noqa: E402
 
 
 # --- Helpers--------------------------------------------------------------
@@ -111,6 +112,24 @@ def _extract_section(text: str, header: str) -> str:
 # Regex pour les wikilinks [[cible]] et liens markdown [texte](cible.md)
 _WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
 _MD_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+\.md)\)")
+
+
+def _bootstrap_wiki_with_git(project_root: Path) -> Path:
+    """Crée wiki/ + dépôt git dans un répertoire temporaire.
+    Nécessaire pour les tests batch qui font des commits."""
+    import subprocess
+
+    wiki = project_root / "wiki"
+    _bootstrap_wiki(wiki)
+    subprocess.run(["git", "init"], cwd=str(project_root), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@wiki-llm.local"],
+                   cwd=str(project_root), check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test Wiki LLM"],
+                   cwd=str(project_root), check=True, capture_output=True)
+    subprocess.run(["git", "add", "wiki/"], cwd=str(project_root), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init: structure wiki"],
+                   cwd=str(project_root), check=True, capture_output=True)
+    return wiki
 
 
 # === TC-01 — Règle 1 =====================================================
@@ -582,3 +601,101 @@ class TestTC09:
             "TC-09 : une phrase sans citation aurait dû être détectée"
         )
         assert "Les agents IA" in uncited[0]
+
+
+# === TC-10 — Batch : skip fiche déjà ingérée =============================
+
+
+class TestTC10:
+    def test_skip_already_ingested(self, tmp_path):
+        project_root = tmp_path / "project"
+        wiki = _bootstrap_wiki_with_git(project_root)
+
+        fiche = read_fiche(FICHE_COMPUTER_USE)
+        source_slug = slugify(fiche.titre)
+
+        # Première ingestion
+        ingest(fiche_path=FICHE_COMPUTER_USE, wiki_root=wiki, do_commit=False, do_validate=False)
+        source_page = wiki / "sources" / f"{source_slug}.md"
+        assert source_page.is_file()
+        content_after_first = source_page.read_text(encoding="utf-8")
+        mtime_after_first = source_page.stat().st_mtime_ns
+
+        # Batch avec la même fiche — doit skip
+        report = ingest_batch(
+            [FICHE_COMPUTER_USE],
+            wiki_root=wiki,
+            do_commit=False,
+            do_validate=False,
+            batch_label="test-skip",
+        )
+
+        assert source_page.read_text(encoding="utf-8") == content_after_first, (
+            "TC-10 : la page source a été modifiée malgré le skip"
+        )
+        assert source_page.stat().st_mtime_ns == mtime_after_first, (
+            "TC-10 : le mtime de la page source a changé malgré le skip"
+        )
+        assert "ignorées" in report.lower() or "ignorees" in report.lower(), (
+            "TC-10 : le compte-rendu ne mentionne pas les fiches ignorées"
+        )
+
+
+# === TC-11 — Batch : 1 seul commit en fin de batch =======================
+
+
+class TestTC11:
+    def test_single_commit_for_batch(self, tmp_path):
+        import subprocess
+
+        project_root = tmp_path / "project"
+        wiki = _bootstrap_wiki_with_git(project_root)
+
+        ingest_batch(
+            [FICHE_COMPUTER_USE, FICHE_DEUX_PHILO],
+            wiki_root=wiki,
+            do_commit=True,
+            do_validate=False,
+            batch_label="test-commit",
+        )
+
+        result = subprocess.run(
+            ["git", "log", "--oneline"],
+            cwd=str(project_root),
+            check=True, capture_output=True, text=True,
+        )
+        commits = [l for l in result.stdout.strip().splitlines() if l.strip()]
+        assert len(commits) == 2, (
+            f"TC-11 : attendu 2 commits (init + batch), trouvé {len(commits)} :\n"
+            + result.stdout
+        )
+        assert "batch" in commits[0].lower(), (
+            f"TC-11 : le dernier commit ne contient pas 'batch' : {commits[0]}"
+        )
+
+
+# === TC-12 — Batch : compte-rendu global dans log.md label batch =========
+
+
+class TestTC12:
+    def test_batch_report_in_log(self, tmp_path):
+        from datetime import date
+
+        project_root = tmp_path / "project"
+        wiki = _bootstrap_wiki_with_git(project_root)
+
+        ingest_batch(
+            [FICHE_COMPUTER_USE],
+            wiki_root=wiki,
+            do_commit=False,
+            do_validate=False,
+            batch_label="test-log",
+        )
+
+        log_text = (wiki / "log.md").read_text(encoding="utf-8")
+        today = date.today().isoformat()
+
+        assert f"## [{today}] batch | test-log" in log_text, (
+            "TC-12 : entrée batch absente de log.md\n"
+            f"  log.md : {log_text[:500]}"
+        )
