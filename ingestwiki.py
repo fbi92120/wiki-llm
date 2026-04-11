@@ -111,6 +111,19 @@ def _find_all_fiches(yt_knowledge: Path) -> list[Path]:
     return fiches
 
 
+def _search_fiche_by_name(name: str, yt_knowledge: Path) -> list[Path]:
+    """Cherche une fiche par nom de fichier dans tous les sous-dossiers
+    de YT-Knowledge/. Retourne toutes les correspondances."""
+    name = name.lstrip("/")
+    matches: list[Path] = []
+    if not yt_knowledge.is_dir():
+        return matches
+    for f in yt_knowledge.rglob("*.md"):
+        if f.is_file() and f.name == name:
+            matches.append(f)
+    return sorted(matches)
+
+
 def _is_already_ingested(fiche_path: Path, wiki_root: Path) -> bool:
     """Vérifie si une fiche a déjà été ingérée (page source existante)."""
     fiche = read_fiche(fiche_path)
@@ -534,8 +547,28 @@ def _detect_mode(arg: str | None, config: dict, wiki_root: Path) -> tuple[str, l
         fiches = _find_fiches_in_dir(path)
         return "folder", fiches
 
-    print(f"Erreur : '{arg}' n'est ni un fichier, ni un sous-dossier "
-          f"de {yt_path}", file=sys.stderr)
+    # Recherche par nom de fichier dans YT-Knowledge/
+    matches = _search_fiche_by_name(arg, yt_path)
+    if len(matches) == 1:
+        return "single", [matches[0]]
+    if len(matches) > 1:
+        print(f"Plusieurs fiches correspondent à '{arg}' :")
+        for i, m in enumerate(matches, 1):
+            print(f"  {i}. {m.relative_to(yt_path)}")
+        choice = input("Numéro de la fiche à ingérer (ou q pour quitter) : ").strip()
+        if choice.lower() == "q":
+            sys.exit(0)
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(matches):
+                return "single", [matches[idx]]
+        except ValueError:
+            pass
+        print("Choix invalide.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Erreur : '{arg}' n'est ni un fichier, ni un sous-dossier, "
+          f"ni un nom de fiche trouvé dans {yt_path}", file=sys.stderr)
     sys.exit(1)
 
 
