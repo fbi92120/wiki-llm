@@ -255,6 +255,36 @@ class TestTC03:
             f"  obtenu  ({len(note_in_page)} chars) : {note_in_page!r}"
         )
 
+    def test_placeholder_espace_libre_becomes_empty(self, tmp_path):
+        """Si Mes notes = '*(espace libre)*' seul, la page wiki doit
+        afficher le placeholder vide, pas le texte du placeholder."""
+        from src.reader import SourceFiche
+
+        wiki = tmp_path / "wiki"
+        _bootstrap_wiki(wiki)
+
+        # Fiche synthétique avec placeholder seul
+        fiche = SourceFiche(
+            titre="Test placeholder",
+            url="https://example.com",
+            chaine="Test",
+            duree="10:00",
+            these_centrale="Thèse test",
+            mes_notes="",  # reader retourne "" pour "*(espace libre)*" seul
+        )
+        page_path = write_source_page(fiche, "test-placeholder.md", wiki)
+        page_text = page_path.read_text(encoding="utf-8")
+
+        marker = "## Note personnelle\n\n"
+        idx = page_text.find(marker)
+        assert idx != -1
+        note_in_page = page_text[idx + len(marker):].rstrip("\n")
+
+        assert note_in_page == "*(aucune note dans la fiche source)*", (
+            "TC-03 : placeholder '*(espace libre)*' devrait produire "
+            f"le message vide, pas : {note_in_page!r}"
+        )
+
 
 # === TC-04 — Règle 4 =====================================================
 # index.md porte un timestamp de modification antérieur ou égal à celui
@@ -702,3 +732,44 @@ class TestTC12:
             "TC-12 : entrée batch absente de log.md\n"
             f"  log.md : {log_text[:500]}"
         )
+
+
+# === TC-13 — Règle 16 : questions ouvertes dans toutes-les-questions.md ===
+# Après ingestion, toutes-les-questions.md contient les questions de la
+# fiche avec le lien [[sources/slug]].
+
+
+class TestTC13:
+    def test_questions_appended(self, tmp_path):
+        wiki = tmp_path / "wiki"
+        _bootstrap_wiki(wiki)
+        (wiki / "questions").mkdir(exist_ok=True)
+        (wiki / "questions" / "toutes-les-questions.md").write_text(
+            "# Questions ouvertes — toutes les sources\n", encoding="utf-8"
+        )
+
+        fiche = read_fiche(FICHE_COMPUTER_USE)
+        source_slug = slugify(fiche.titre)
+
+        # Prérequis : la fiche doit avoir des questions
+        assert fiche.questions_ouvertes, (
+            "TC-13 : la fiche de test n'a pas de questions ouvertes"
+        )
+
+        write_source_page(fiche, FICHE_COMPUTER_USE.name, wiki)
+
+        questions_text = (
+            wiki / "questions" / "toutes-les-questions.md"
+        ).read_text(encoding="utf-8")
+
+        # Vérifie le lien vers la page source
+        assert f"[[sources/{source_slug}]]" in questions_text, (
+            "TC-13 : lien [[sources/slug]] absent de toutes-les-questions.md"
+        )
+
+        # Vérifie que chaque question de la fiche est présente
+        for q in fiche.questions_ouvertes:
+            assert q in questions_text, (
+                f"TC-13 : question absente de toutes-les-questions.md :\n"
+                f"  {q[:80]}"
+            )
