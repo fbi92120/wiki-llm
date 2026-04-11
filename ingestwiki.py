@@ -30,7 +30,7 @@ import argparse
 import subprocess
 import sys
 import time
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import yaml
@@ -52,6 +52,17 @@ from src.validator import (  # noqa: E402
 )
 
 DEFAULT_WIKI_ROOT = _PROJECT_ROOT / "wiki"
+
+
+# --- Log technique -------------------------------------------------------
+
+
+def _log(msg: str, wiki_root: Path = DEFAULT_WIKI_ROOT) -> None:
+    """Append une ligne horodatée dans wiki/ingest.log (log technique)."""
+    log_path = Path(wiki_root) / "ingest.log"
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with log_path.open("a", encoding="utf-8") as f:
+        f.write(f"[{timestamp}] {msg}\n")
 
 
 # --- Configuration -------------------------------------------------------
@@ -234,7 +245,7 @@ def ingest(
     wiki_root = Path(wiki_root).resolve()
 
     # --- Lecture de la fiche ---
-    print(f"📖 Lecture de {fiche_path.name}")
+    _log(f"START {fiche_path.name}", wiki_root)
     fiche = read_fiche(fiche_path)
     source_slug = slugify(fiche.titre)
     source_filename = fiche_path.name
@@ -259,7 +270,7 @@ def ingest(
     pages_mtime_ns: dict[str, int] = {}
 
     # === Étape 1 — index.md mis à jour EN PREMIER (R4) ===
-    print("  1. Mise à jour index.md")
+    _log("  1. index.md", wiki_root)
     idx_source = update_index(
         page_type="source",
         page_name=fiche.titre,
@@ -273,7 +284,6 @@ def ingest(
     time.sleep(0.05)
 
     # === Étape 2 — page source ===
-    print("  2. Création page source")
     source_page_path = wiki_root / "sources" / f"{source_slug}.md"
     is_new_source = not source_page_path.exists()
     try:
@@ -281,14 +291,13 @@ def ingest(
         tag = f"sources/{source_slug}"
         pages_created.append(tag)
         pages_mtime_ns[tag] = source_page_path.stat().st_mtime_ns
+        _log(f"  2. source created: {tag}", wiki_root)
     except FileExistsError:
-        print(f"    ⚠ Doublon détecté : {source_page_path.name}")
-        print("      La page source existe déjà — passage aux concepts.")
         tag = f"sources/{source_slug}"
         pages_updated.append(tag)
+        _log(f"  2. source duplicate: {tag}", wiki_root)
 
     # === Étape 3 — pages concepts ===
-    print("  3. Mise à jour pages concepts")
     concept_names: list[str] = []
     for concept in fiche.concepts_cles:
         cname = concept["nom"]
@@ -302,13 +311,11 @@ def ingest(
             pages_created.append(tag)
         elif result["action"] == "updated":
             pages_updated.append(tag)
-        # "duplicate" → aucune modification
 
         cpath = wiki_root / "concepts" / f"{cslug}.md"
         if cpath.is_file():
             pages_mtime_ns[tag] = cpath.stat().st_mtime_ns
 
-        # Entrée index pour chaque concept
         update_index(
             page_type="concept",
             page_name=cname,
@@ -316,10 +323,9 @@ def ingest(
             relative_path=f"concepts/{cslug}",
             wiki_root=wiki_root,
         )
-        print(f"    - {cname} : {result['action']}")
+        _log(f"  3. concept {result['action']}: {cname}", wiki_root)
 
     # === Étape 4 — log.md ===
-    print("  4. Entrée log.md")
     log_desc = (
         f"Ingestion de {source_filename} : "
         f"{len(pages_created)} page(s) créée(s), "
@@ -331,32 +337,25 @@ def ingest(
         description=log_desc,
         wiki_root=wiki_root,
     )
+    _log(f"  4. log.md: {log_desc}", wiki_root)
 
-    # === Étape 5 — contradictions (si signalées par l'humain) ===
-    # Dans le MVP piloté, la détection de contradictions est faite
-    # par le LLM en amont. L'orchestrateur n'a pas de logique de
-    # détection sémantique. Si des contradictions sont à enregistrer,
-    # l'humain appelle contradiction_manager séparément ou via un
-    # futur flag CLI.
+    # === Étape 5 — contradictions ===
     tensions: list[str] = []
-    print("  5. Contradictions : aucune détection automatique (MVP piloté)")
+    _log("  5. contradictions: aucune (MVP pilote)", wiki_root)
 
     # === Étape 6 — compte-rendu ===
-    print("  6. Génération compte-rendu")
     question = question_override or _generate_question(
         concept_names, fiche.these_centrale
     )
-    # Le commit_ref sera injecté après le commit
     commit_ref = "en attente"
 
     # === Étape 7 — commit git ===
     if do_commit:
-        print("  7. Commit git")
         commit_ref = _git_commit(wiki_root, source_slug)
-        print(f"    → {commit_ref}")
+        _log(f"  7. commit: {commit_ref}", wiki_root)
     else:
-        print("  7. Commit git : désactivé (--no-commit)")
         commit_ref = "no-commit"
+        _log("  7. commit: disabled", wiki_root)
 
     report = _format_report(
         source_slug=source_slug,
@@ -369,7 +368,6 @@ def ingest(
 
     # === Étape 8 — validation post-ingestion ===
     if do_validate:
-        print("  8. Validation post-ingestion")
         warnings = validate_post_ingestion(
             wiki_root=wiki_root,
             fiche=fiche,
@@ -383,17 +381,21 @@ def ingest(
             snapshot_before=snapshot_before,
         )
         if warnings:
-            print(f"    ⚠ {len(warnings)} warning(s) :")
+            _log(f"  8. validation: {len(warnings)} warning(s)", wiki_root)
             for w in warnings:
-                print(f"      - {w}")
+                _log(f"     - {w}", wiki_root)
         else:
-            print("    ✅ Aucun warning.")
-    else:
-        print("  8. Validation : désactivée (--no-validate)")
+            _log("  8. validation: OK", wiki_root)
 
-    # === Affichage du compte-rendu ===
-    print()
-    print(report)
+    _log(f"END {source_slug} | created={len(pages_created)} updated={len(pages_updated)}", wiki_root)
+    _log(report, wiki_root)
+
+    # === Terminal : résumé uniquement ===
+    print(
+        f"  {source_slug} : "
+        f"{len(pages_created)} created, {len(pages_updated)} updated"
+        f"{f', commit {commit_ref}' if do_commit else ''}"
+    )
 
     return report
 
@@ -421,27 +423,27 @@ def ingest_batch(
     skipped: list[str] = []
     errors: list[str] = []
 
-    print(f"=== Batch : {total} fiche(s) trouvée(s) ===\n")
+    _log(f"BATCH START label={batch_label} fiches={total}", wiki_root)
 
     for i, fiche_path in enumerate(fiches, 1):
         fiche_name = fiche_path.name
-        print(f"[{i}/{total}] {fiche_name}")
 
         # Skip si déjà ingéré
         try:
             if _is_already_ingested(fiche_path, wiki_root):
                 fiche = read_fiche(fiche_path)
                 slug = slugify(fiche.titre)
-                print(f"  → skip (sources/{slug}.md existe déjà)\n")
+                _log(f"  [{i}/{total}] SKIP {fiche_name} (sources/{slug}.md exists)", wiki_root)
                 skipped.append(fiche_name)
                 continue
         except Exception as e:
-            print(f"  → erreur lecture : {e}\n")
+            _log(f"  [{i}/{total}] ERROR read {fiche_name}: {e}", wiki_root)
             errors.append(fiche_name)
             continue
 
         # Ingestion sans commit individuel
         try:
+            _log(f"  [{i}/{total}] INGEST {fiche_name}", wiki_root)
             ingest(
                 fiche_path=fiche_path,
                 wiki_root=wiki_root,
@@ -450,15 +452,14 @@ def ingest_batch(
             )
             ingested.append(fiche_name)
         except Exception as e:
-            print(f"  → erreur ingestion : {e}\n")
+            _log(f"  [{i}/{total}] ERROR ingest {fiche_name}: {e}", wiki_root)
             errors.append(fiche_name)
 
     # 1 commit en fin de batch
     commit_ref = "no-commit"
     if do_commit and ingested:
-        print("=== Commit batch ===")
         commit_ref = _git_commit(wiki_root, f"batch-{len(ingested)}-fiches")
-        print(f"  → {commit_ref}")
+        _log(f"BATCH COMMIT {commit_ref}", wiki_root)
 
     # Compte-rendu global
     report = (
@@ -475,7 +476,15 @@ def ingest_batch(
     if errors:
         report += f"**En erreur** : {', '.join(errors)}\n"
 
-    print(f"\n{report}")
+    _log(f"BATCH END\n{report}", wiki_root)
+
+    # Terminal : résumé uniquement
+    print(
+        f"Batch {batch_label} : "
+        f"{len(ingested)} ingérée(s), {len(skipped)} ignorée(s), "
+        f"{len(errors)} erreur(s)"
+        f"{f', commit {commit_ref}' if do_commit and ingested else ''}"
+    )
 
     # Log batch dans log.md
     if ingested:
