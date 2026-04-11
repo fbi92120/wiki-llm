@@ -157,7 +157,7 @@ Obsidian vault/
 ### Flux de traitement — Workflow A
 
 ```
-Fiche YT Extractor (-reduit.md)
+Fiche YT Extractor (-reduit.md ou native)
     │
     ├── 1. index.md mis à jour en premier
     ├── 2. Page sources/ créée ou mise à jour
@@ -167,6 +167,31 @@ Fiche YT Extractor (-reduit.md)
     ├── 6. Compte-rendu émis (tensions + question transversale)
     └── 7. Commit git
 ```
+
+### Modes d'ingestion
+
+Trois modes d'invocation du point d'entrée CLI `ingestwiki.py` :
+
+| Mode | Commande | Comportement |
+|---|---|---|
+| **1 — Fiche unique** | `./ingestwiki.py <fiche.md>` | Ingère une seule fiche. Chemin complet ou relatif. |
+| **2 — Dossier** | `./ingestwiki.py ia-et-strategie-le-samourai` | L'argument est le nom du sous-dossier dans `YT-Knowledge/`. L'outil reconstruit le chemin complet depuis `vault_path` défini dans `config.yml`. |
+| **3 — Vault complet** | `./ingestwiki.py` (sans argument) | Ingère tout `YT-Knowledge/`. Le chemin est lu depuis `vault_path` dans `config.yml`. |
+
+**Détection automatique du mode :**
+- L'argument est un fichier existant → mode 1.
+- L'argument n'est pas un fichier mais correspond à un sous-dossier
+  de `YT-Knowledge/` → mode 2.
+- Pas d'argument → mode 3.
+
+**Comportement batch (modes 2 et 3) :**
+- **Skip automatique** : si `wiki/sources/[slug].md` existe déjà,
+  la fiche est ignorée (pas de réingestion).
+- **1 commit git** en fin de batch (pas un commit par fiche).
+- **Compte-rendu global** affiché dans le terminal ET appendé dans
+  `log.md` avec le label `batch`.
+- Chaque fiche ingérée produit son entrée `ingest` individuelle dans
+  `log.md` avant le compte-rendu batch.
 
 ### Mécanisme de l'index
 

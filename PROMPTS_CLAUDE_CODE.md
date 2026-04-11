@@ -106,7 +106,7 @@ concerné — jamais le test.
 
 ### Prompt 10 — Orchestrateur Workflow A
 
-Écris `wiki_ingest.py` (point d'entrée CLI) :
+Écris `ingestwiki.py` (point d'entrée CLI) :
 - Appelle les modules dans l'ordre défini dans SPECS.md Bloc 2
 - Zéro logique métier dans l'orchestrateur — tout est dans `src/`
 - Produit le compte-rendu de fin d'ingestion (tensions + question transversale)

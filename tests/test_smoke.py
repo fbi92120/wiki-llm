@@ -45,7 +45,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.reader import read_fiche  # noqa: E402
 from src.source_writer import slugify  # noqa: E402
-from wiki_ingest import ingest  # noqa: E402
+from ingestwiki import ingest  # noqa: E402
 
 
 # --- Sélection de la fiche de référence ----------------------------------

@@ -16,7 +16,7 @@ connaissances persistante en fichiers Markdown a partir de fiches
 YouTube produites par YT Knowledge Extractor.
 
 ```
-python3 wiki_ingest.py <fiche-reduit.md>
+python3 ingestwiki.py <fiche-reduit.md>
 ```
 
 Une commande declenche le Workflow A complet :
@@ -57,7 +57,7 @@ Fiche -reduit.md
  +-- src/contradiction_manager.py -> enregistre dans contradictions.md + page concept
  +-- src/validator.py         -> verifie les 9 regles post-ingestion
  |
- +-- wiki_ingest.py           -> orchestration pure, zero logique metier
+ +-- ingestwiki.py           -> orchestration pure, zero logique metier
 ```
 
 ### Decisions cles
@@ -67,7 +67,7 @@ Fiche -reduit.md
 | Index vs RAG vectoriel | `index.md` simple | Suffisant jusqu'a ~500 pages (Karpathy). RAG reporte en V2-4 |
 | Architecture agentique | Reportee en V2-9 | Chaque operation pilotee par l'humain. Pas de boucle autonome |
 | Vault Obsidian | `wiki/` dans le projet git | Git et Obsidian cohabitent sans friction. Pas de sync iCloud |
-| Orchestrateur passif | Zero logique dans `wiki_ingest.py` | Prepare une V2 avec interface differente sans toucher `src/` |
+| Orchestrateur passif | Zero logique dans `ingestwiki.py` | Prepare une V2 avec interface differente sans toucher `src/` |
 | Tests avant validateur | TC-01 a TC-09 ecrits avant `validator.py` | Les tests definissent le contrat, le code s'y conforme |
 | Contradiction manager | Enregistrement seulement, pas de detection | La detection semantique appartient au LLM pilote, pas au code |
 | Question transversale | Template formulaique, surchargeable par `--question` | Pas de LLM dans l'orchestrateur — le pilote fournit la synthese |
@@ -154,7 +154,7 @@ Phase 1 — Implementation (12 prompts dans l'ordre SPECS.md Bloc 5)
   Prompt 7   src/contradiction_manager.py : gestionnaire contradictions.md
   Prompt 8   tests/test_contract.py : 9 tests de contrat (AVANT validateur)
   Prompt 9   src/validator.py : verificateur post-ingestion
-  Prompt 10  wiki_ingest.py : orchestrateur Workflow A
+  Prompt 10  ingestwiki.py : orchestrateur Workflow A
   Prompt 11  tests/test_smoke.py : test bout en bout
   Prompt 12  README.md + README.fr.md
 ```
@@ -185,7 +185,7 @@ que les tests passent — pas l'inverse. Un seul ajustement de regex
 (TC-08 : `_REPORT_FIELD_RE` traversait les lignes via `\s*`) corrige
 dans le test, pas dans le module.
 
-**L'orchestrateur passif** : `wiki_ingest.py` ne contient aucune
+**L'orchestrateur passif** : `ingestwiki.py` ne contient aucune
 logique metier (408 lignes d'orchestration pure). Changer l'ordre
 des operations ou ajouter un module ne casse rien.
 

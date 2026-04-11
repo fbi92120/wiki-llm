@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-wiki_ingest.py — Wiki LLM — Point d'entrée CLI du Workflow A
+ingestwiki.py — Wiki LLM — Point d'entrée CLI du Workflow A
 
 Orchestre l'ingestion d'une fiche -reduit.md dans le wiki.
 Zéro logique métier — tout est délégué aux modules de src/.
@@ -16,7 +16,7 @@ Ordre d'appel (SPECS.md Bloc 2) :
     8. Commit git                      (subprocess)
 
 Usage :
-    python3 wiki_ingest.py <chemin_fiche_reduit.md> [options]
+    ./ingestwiki.py <chemin_fiche_reduit.md> [options]
 
 Options :
     --wiki-root PATH        Racine du wiki (défaut : ./wiki/)
@@ -352,7 +352,7 @@ def ingest(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Wiki LLM — Ingestion Workflow A",
-        epilog="Exemple : python3 wiki_ingest.py wiki-test/fiche-reduit.md",
+        epilog="Exemple : ./ingestwiki.py wiki-test/fiche-reduit.md",
     )
     parser.add_argument(
         "fiche",

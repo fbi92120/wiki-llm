@@ -28,7 +28,7 @@ Aucune dépendance runtime en dehors de la bibliothèque standard Python.
 ## Utilisation
 
 ```bash
-python3 wiki_ingest.py <chemin-vers-fiche-reduit.md>
+python3 ingestwiki.py <chemin-vers-fiche-reduit.md>
 ```
 
 | Option | Description |
@@ -42,7 +42,7 @@ python3 wiki_ingest.py <chemin-vers-fiche-reduit.md>
 ### Exemple
 
 ```bash
-python3 wiki_ingest.py wiki-test/2026-03-24-40-millions-de-vues-en-12h-claude-computer-use-enterre-le-travail-de-bureau-reduit.md
+python3 ingestwiki.py wiki-test/2026-03-24-40-millions-de-vues-en-12h-claude-computer-use-enterre-le-travail-de-bureau-reduit.md
 ```
 
 ### Lancer les tests
@@ -55,7 +55,7 @@ python3 -m pytest tests/ -v
 
 ```
 wiki-llm/
-    wiki_ingest.py          # Point d'entrée CLI (orchestrateur Workflow A)
+    ingestwiki.py          # Point d'entrée CLI (orchestrateur Workflow A)
     SPECS.md                # Spécifications complètes
     CLAUDE.md               # Constitution et règles du projet
     src/
