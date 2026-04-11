@@ -2,27 +2,24 @@
 """
 ingestwiki.py — Wiki LLM — Point d'entrée CLI du Workflow A
 
-Orchestre l'ingestion d'une fiche -reduit.md dans le wiki.
+Orchestre l'ingestion de fiches YT Extractor dans le wiki.
 Zéro logique métier — tout est délégué aux modules de src/.
 
-Ordre d'appel (SPECS.md Bloc 2) :
-    1. index.md mis à jour en premier  (src/index_manager)
-    2. Page sources/ créée             (src/source_writer)
-    3. Pages concepts/ créées ou mises à jour (src/concept_writer)
-    4. log.md — entrée ingest ajoutée  (src/log_manager)
-    5. contradictions.md — si tensions fournies (src/contradiction_manager)
-    6. Compte-rendu émis               (formatage local)
-    7. Validation post-ingestion       (src/validator)
-    8. Commit git                      (subprocess)
+Trois modes d'ingestion (SPECS.md Bloc 2 — Modes d'ingestion) :
+    Mode 1 — Fiche unique  : ./ingestwiki.py <fiche.md>
+    Mode 2 — Dossier       : ./ingestwiki.py <nom-sous-dossier>
+    Mode 3 — Vault complet : ./ingestwiki.py (sans argument)
 
-Usage :
-    ./ingestwiki.py <chemin_fiche_reduit.md> [options]
+Détection automatique :
+    - Argument = fichier existant → mode 1
+    - Argument = sous-dossier de YT-Knowledge/ → mode 2
+    - Pas d'argument → mode 3
+
+Modes 2 et 3 : skip si wiki/sources/[slug].md existe déjà,
+1 commit git en fin de batch, compte-rendu global terminal + log.md.
 
 Options :
     --wiki-root PATH        Racine du wiki (défaut : ./wiki/)
-    --source-dir PATH       Dossier des sources brutes pour vérification R6
-    --question TEXT          Question transversale pour le compte-rendu
-                            (sinon générée depuis les concepts extraits)
     --no-commit             Ne pas faire le commit git
     --no-validate           Ne pas lancer la validation post-ingestion
 """
@@ -35,6 +32,8 @@ import sys
 import time
 from datetime import date
 from pathlib import Path
+
+import yaml
 
 _PROJECT_ROOT = Path(__file__).resolve().parent
 if str(_PROJECT_ROOT) not in sys.path:
@@ -53,6 +52,59 @@ from src.validator import (  # noqa: E402
 )
 
 DEFAULT_WIKI_ROOT = _PROJECT_ROOT / "wiki"
+
+
+# --- Configuration -------------------------------------------------------
+
+
+def _load_config() -> dict:
+    """Charge config.yml depuis la racine du projet.
+    Retourne un dict vide si le fichier n'existe pas."""
+    config_path = _PROJECT_ROOT / "config.yml"
+    if not config_path.is_file():
+        return {}
+    with config_path.open(encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def _yt_knowledge_path(config: dict) -> Path:
+    """Construit le chemin absolu vers YT-Knowledge/ depuis config.yml."""
+    vault = config.get("vault_path", "")
+    yt_dir = config.get("yt_knowledge_dir", "YT-Knowledge")
+    if not vault:
+        print("Erreur : vault_path absent de config.yml", file=sys.stderr)
+        sys.exit(1)
+    return Path(vault) / yt_dir
+
+
+# --- Découverte de fiches ------------------------------------------------
+
+
+def _find_fiches_in_dir(directory: Path) -> list[Path]:
+    """Liste toutes les fiches .md d'un dossier (non récursif).
+    Exclut les fichiers qui ne sont pas des fiches YT Extractor."""
+    if not directory.is_dir():
+        return []
+    return sorted(f for f in directory.glob("*.md") if f.is_file())
+
+
+def _find_all_fiches(yt_knowledge: Path) -> list[Path]:
+    """Liste toutes les fiches de tous les sous-dossiers de YT-Knowledge/."""
+    if not yt_knowledge.is_dir():
+        print(f"Erreur : dossier introuvable : {yt_knowledge}", file=sys.stderr)
+        sys.exit(1)
+    fiches: list[Path] = []
+    for subdir in sorted(yt_knowledge.iterdir()):
+        if subdir.is_dir():
+            fiches.extend(_find_fiches_in_dir(subdir))
+    return fiches
+
+
+def _is_already_ingested(fiche_path: Path, wiki_root: Path) -> bool:
+    """Vérifie si une fiche a déjà été ingérée (page source existante)."""
+    fiche = read_fiche(fiche_path)
+    source_slug = slugify(fiche.titre)
+    return (wiki_root / "sources" / f"{source_slug}.md").is_file()
 
 
 # --- Formatage du compte-rendu -------------------------------------------
@@ -346,36 +398,160 @@ def ingest(
     return report
 
 
+# --- Batch ---------------------------------------------------------------
+
+
+def ingest_batch(
+    fiches: list[Path],
+    *,
+    wiki_root: Path = DEFAULT_WIKI_ROOT,
+    do_commit: bool = True,
+    do_validate: bool = True,
+    batch_label: str = "batch",
+) -> str:
+    """Ingère une liste de fiches en mode batch.
+
+    - Skip automatique des fiches déjà ingérées.
+    - 1 commit git en fin de batch.
+    - Compte-rendu global dans le terminal + log.md label batch.
+    """
+    wiki_root = Path(wiki_root).resolve()
+    total = len(fiches)
+    ingested: list[str] = []
+    skipped: list[str] = []
+    errors: list[str] = []
+
+    print(f"=== Batch : {total} fiche(s) trouvée(s) ===\n")
+
+    for i, fiche_path in enumerate(fiches, 1):
+        fiche_name = fiche_path.name
+        print(f"[{i}/{total}] {fiche_name}")
+
+        # Skip si déjà ingéré
+        try:
+            if _is_already_ingested(fiche_path, wiki_root):
+                fiche = read_fiche(fiche_path)
+                slug = slugify(fiche.titre)
+                print(f"  → skip (sources/{slug}.md existe déjà)\n")
+                skipped.append(fiche_name)
+                continue
+        except Exception as e:
+            print(f"  → erreur lecture : {e}\n")
+            errors.append(fiche_name)
+            continue
+
+        # Ingestion sans commit individuel
+        try:
+            ingest(
+                fiche_path=fiche_path,
+                wiki_root=wiki_root,
+                do_commit=False,
+                do_validate=do_validate,
+            )
+            ingested.append(fiche_name)
+        except Exception as e:
+            print(f"  → erreur ingestion : {e}\n")
+            errors.append(fiche_name)
+
+    # 1 commit en fin de batch
+    commit_ref = "no-commit"
+    if do_commit and ingested:
+        print("=== Commit batch ===")
+        commit_ref = _git_commit(wiki_root, f"batch-{len(ingested)}-fiches")
+        print(f"  → {commit_ref}")
+
+    # Compte-rendu global
+    report = (
+        f"## Compte-rendu batch — {batch_label}\n"
+        f"**Fiches traitées** : {len(ingested)}/{total}\n"
+        f"**Fiches ignorées (déjà ingérées)** : {len(skipped)}\n"
+        f"**Erreurs** : {len(errors)}\n"
+        f"**Commit** : {commit_ref}\n"
+    )
+    if ingested:
+        report += f"**Ingérées** : {', '.join(ingested)}\n"
+    if skipped:
+        report += f"**Ignorées** : {', '.join(skipped)}\n"
+    if errors:
+        report += f"**En erreur** : {', '.join(errors)}\n"
+
+    print(f"\n{report}")
+
+    # Log batch dans log.md
+    if ingested:
+        append_log_entry(
+            event_type="batch",
+            name=batch_label,
+            description=(
+                f"{len(ingested)} ingérée(s), {len(skipped)} ignorée(s), "
+                f"{len(errors)} erreur(s). Commit: {commit_ref}"
+            ),
+            wiki_root=wiki_root,
+        )
+
+    return report
+
+
 # --- CLI -----------------------------------------------------------------
+
+
+def _detect_mode(arg: str | None, config: dict, wiki_root: Path) -> tuple[str, list[Path]]:
+    """Détecte le mode d'ingestion depuis l'argument CLI.
+
+    Returns:
+        (mode, fiches) où mode est "single", "folder" ou "vault".
+    """
+    # Mode 3 — pas d'argument → vault complet
+    if arg is None:
+        yt_path = _yt_knowledge_path(config)
+        fiches = _find_all_fiches(yt_path)
+        return "vault", fiches
+
+    path = Path(arg)
+
+    # Mode 1 — fichier existant
+    if path.is_file():
+        return "single", [path]
+
+    # Mode 2 — nom de sous-dossier dans YT-Knowledge/
+    yt_path = _yt_knowledge_path(config)
+    subdir = yt_path / arg
+    if subdir.is_dir():
+        fiches = _find_fiches_in_dir(subdir)
+        return "folder", fiches
+
+    # Essayer comme chemin complet de dossier
+    if path.is_dir():
+        fiches = _find_fiches_in_dir(path)
+        return "folder", fiches
+
+    print(f"Erreur : '{arg}' n'est ni un fichier, ni un sous-dossier "
+          f"de {yt_path}", file=sys.stderr)
+    sys.exit(1)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Wiki LLM — Ingestion Workflow A",
-        epilog="Exemple : ./ingestwiki.py wiki-test/fiche-reduit.md",
+        epilog=(
+            "Exemples :\n"
+            "  ./ingestwiki.py fiche.md                    # mode 1 — fiche unique\n"
+            "  ./ingestwiki.py ia-et-strategie-le-samourai  # mode 2 — dossier\n"
+            "  ./ingestwiki.py                              # mode 3 — vault complet"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "fiche",
-        type=Path,
-        help="Chemin vers la fiche -reduit.md à ingérer",
+        "target",
+        nargs="?",
+        default=None,
+        help="Fiche .md, nom de sous-dossier YT-Knowledge/, ou rien (vault complet)",
     )
     parser.add_argument(
         "--wiki-root",
         type=Path,
         default=DEFAULT_WIKI_ROOT,
         help="Racine du wiki (défaut : ./wiki/)",
-    )
-    parser.add_argument(
-        "--source-dir",
-        type=Path,
-        default=None,
-        help="Dossier des sources brutes pour vérification R6",
-    )
-    parser.add_argument(
-        "--question",
-        type=str,
-        default=None,
-        help="Question transversale pour le compte-rendu",
     )
     parser.add_argument(
         "--no-commit",
@@ -389,19 +565,32 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    config = _load_config()
 
-    if not args.fiche.is_file():
-        print(f"Erreur : fiche introuvable : {args.fiche}", file=sys.stderr)
+    mode, fiches = _detect_mode(args.target, config, args.wiki_root)
+
+    if not fiches:
+        print("Aucune fiche trouvée.", file=sys.stderr)
         sys.exit(1)
 
-    ingest(
-        fiche_path=args.fiche,
-        wiki_root=args.wiki_root,
-        source_dir=args.source_dir,
-        question_override=args.question,
-        do_commit=not args.no_commit,
-        do_validate=not args.no_validate,
-    )
+    if mode == "single":
+        # Mode 1 — fiche unique (comportement original)
+        ingest(
+            fiche_path=fiches[0],
+            wiki_root=args.wiki_root,
+            do_commit=not args.no_commit,
+            do_validate=not args.no_validate,
+        )
+    else:
+        # Modes 2 et 3 — batch
+        label = args.target if args.target else "vault-complet"
+        ingest_batch(
+            fiches,
+            wiki_root=args.wiki_root,
+            do_commit=not args.no_commit,
+            do_validate=not args.no_validate,
+            batch_label=label,
+        )
 
 
 if __name__ == "__main__":

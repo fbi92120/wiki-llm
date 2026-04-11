@@ -44,6 +44,7 @@ VALID_EVENT_TYPES: frozenset[str] = frozenset(
         "qualite",
         "insuffisant",
         "nouveau-dossier",
+        "batch",
     }
 )
 
