@@ -35,8 +35,8 @@ Statut : spécifications validées — prêt pour implémentation.
 10. Source insuffisante : déplacer dans `wiki/a-traiter/` et enregistrer
     dans `log.md` avec le label `insuffisant`
 11. Périmètre d'écriture : `sources/`, `concepts/`, `syntheses/`,
-    `a-traiter/` uniquement — jamais dans `YT-Knowledge/` ni ailleurs
-    dans le vault
+    `a-traiter/`, `questions/` uniquement — jamais dans `YT-Knowledge/`
+    ni ailleurs dans le vault
 12. Fin d'ingestion : produire un **compte-rendu** incluant les tensions
     détectées et la question transversale émergente
 13. Template de page source : **fixe** pour Workflow A (YT Extractor),
@@ -44,6 +44,9 @@ Statut : spécifications validées — prêt pour implémentation.
 14. Réponse à une requête : depuis le **wiki uniquement**, jamais depuis
     la connaissance générale du LLM
 15. `wiki/` **versionné avec git** — commit après chaque ingestion
+16. `wiki/questions/toutes-les-questions.md` — **append-only**.
+    Chaque ingestion y ajoute les questions ouvertes verbatim
+    avec lien `[[sources/slug]]` vers la page source wiki.
 
 ---
 
@@ -103,6 +106,8 @@ wiki/   ← vault Obsidian (~/Projects/wiki-llm/wiki/)
         [...]
     a-traiter/              → sources insuffisantes en attente
     syntheses/              → pages produites à la demande de l'humain
+    questions/
+        toutes-les-questions.md → append-only, questions ouvertes de chaque source
 ```
 
 Claude Code n'a le droit d'écrire **que** dans `wiki/`.
@@ -124,7 +129,7 @@ pour permettre une recherche simple avec les outils Unix :
 ## [2026-04-09] qualite | contrôle santé du wiki
 ```
 
-Types d'événements : `ingest`, `query`, `contradiction`, `qualite`,
+Types d'événements : `ingest`, `batch`, `query`, `contradiction`, `qualite`,
 `insuffisant`, `nouveau-dossier`.
 
 ---
@@ -147,19 +152,30 @@ Une entrée par contradiction détectée :
 
 ```markdown
 # Source — [titre court]
-**Fiche d'origine** : nom du fichier source
+**Fiche d'origine** : [[YT-Knowledge/chaine/nom-fiche]]
 **Vidéo** : titre | **Chaîne** : nom | **URL** : lien | **Durée** : durée
 
-## Thèse centrale
+## Thèse centrale                   ← verbatim
 
-## Concepts clés
+## Chapitrage inféré                ← verbatim
 
-## Trois idées principales
+## Carte des idées                  ← verbatim
 
-## Liens vers concepts transversaux
+## Concepts clés                    ← verbatim
 
-## Note personnelle
+## Formulations notables            ← verbatim
+
+## Questions ouvertes               ← verbatim
+
+## Trois idées principales          ← réservé Phase 2 LLM
+
+## Liens vers concepts transversaux ← réservé Phase 2 LLM
+
+## Note personnelle                 ← verbatim
 ```
+
+Section exclue : `## Sources & références` (liens bruts, pas de valeur
+ajoutée dans le wiki).
 
 ---
 
