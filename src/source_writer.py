@@ -15,7 +15,8 @@ Règles de la constitution appliquées :
 - Règle 6 : la fiche source n'est jamais modifiée.
 - Règle 7 : ne jamais écraser une page existante sans instruction explicite.
   Refus par défaut, paramètre overwrite=True pour forcer après confirmation.
-- Règle 11 : écriture uniquement dans wiki/sources/.
+- Règle 11 : écriture dans wiki/sources/ et wiki/questions/.
+- Règle 16 : wiki/questions/toutes-les-questions.md append-only.
 """
 
 from __future__ import annotations
@@ -86,6 +87,11 @@ def write_source_page(
 
     content = _format_page(fiche, source_filename)
     target.write_text(content, encoding="utf-8")
+
+    # Règle 16 — append questions ouvertes
+    if fiche.questions_ouvertes:
+        _append_questions(fiche, slug, wiki_root)
+
     return target
 
 
@@ -102,20 +108,45 @@ def slugify(text: str) -> str:
 
 
 def _format_page(fiche: SourceFiche, source_filename: str) -> str:
-    """Compose le contenu markdown de la page source selon SPECS.md Bloc 2."""
+    """Compose le contenu markdown de la page source selon SPECS.md Bloc 2.
+
+    Template enrichi pré-Phase 2 :
+    - Sections verbatim copiées depuis la fiche
+    - Sections placeholder réservées Phase 2 LLM
+    - Lien vers la fiche complète via wikilink
+    - Section exclue : ## Sources & références
+    """
     lines: list[str] = []
 
+    # Dériver le chemin wikilink de la fiche dans YT-Knowledge/
+    # Format : [[YT-Knowledge/chaine-slug/nom-fiche]]
+    chaine_slug = slugify(fiche.chaine) if fiche.chaine else "inconnu"
+    fiche_basename = source_filename.replace(".md", "")
+    fiche_link = f"[[YT-Knowledge/{chaine_slug}/{fiche_basename}]]"
+
     lines.append(f"# Source — {fiche.titre}")
-    lines.append(f"**Fiche d'origine** : {source_filename}")
+    lines.append(f"**Fiche d'origine** : {fiche_link}")
     lines.append(
         f"**Vidéo** : {fiche.titre} | **Chaîne** : {fiche.chaine} | "
         f"**URL** : {fiche.url} | **Durée** : {fiche.duree}"
     )
     lines.append("")
 
+    # --- Sections verbatim depuis la fiche ---
+
     lines.append("## Thèse centrale")
     lines.append("")
-    lines.append(fiche.these_centrale)
+    lines.append(fiche.these_centrale if fiche.these_centrale else "*(absente de la fiche source)*")
+    lines.append("")
+
+    lines.append("## Chapitrage inféré")
+    lines.append("")
+    lines.append(fiche.chapitrage_infere if fiche.chapitrage_infere else "*(absent de la fiche source)*")
+    lines.append("")
+
+    lines.append("## Carte des idées")
+    lines.append("")
+    lines.append(fiche.carte_des_idees if fiche.carte_des_idees else "*(absente de la fiche source)*")
     lines.append("")
 
     lines.append("## Concepts clés")
@@ -134,6 +165,28 @@ def _format_page(fiche: SourceFiche, source_filename: str) -> str:
         lines.append("*(aucun concept extrait de la fiche source)*")
         lines.append("")
 
+    lines.append("## Formulations notables")
+    lines.append("")
+    if fiche.formulations_notables:
+        for quote in fiche.formulations_notables:
+            lines.append(quote)
+            lines.append("")
+    else:
+        lines.append("*(aucune formulation notable dans la fiche source)*")
+        lines.append("")
+
+    lines.append("## Questions ouvertes")
+    lines.append("")
+    if fiche.questions_ouvertes:
+        for q in fiche.questions_ouvertes:
+            lines.append(f"- {q}")
+        lines.append("")
+    else:
+        lines.append("*(aucune question ouverte dans la fiche source)*")
+        lines.append("")
+
+    # --- Sections réservées Phase 2 LLM ---
+
     lines.append("## Trois idées principales")
     lines.append("")
     lines.append(
@@ -150,7 +203,8 @@ def _format_page(fiche: SourceFiche, source_filename: str) -> str:
     )
     lines.append("")
 
-    # Règle 3 — reproduction verbatim de "Mes notes"
+    # --- Note personnelle (règle 3 — verbatim) ---
+
     lines.append("## Note personnelle")
     lines.append("")
     if fiche.mes_notes:
@@ -160,6 +214,31 @@ def _format_page(fiche: SourceFiche, source_filename: str) -> str:
     lines.append("")
 
     return "\n".join(lines)
+
+
+def _append_questions(
+    fiche: SourceFiche,
+    source_slug: str,
+    wiki_root: Path | str,
+) -> None:
+    """Append les questions ouvertes dans wiki/questions/toutes-les-questions.md.
+
+    Règle 16 : append-only. Format SPECS.md section Décision 13.
+    """
+    questions_dir = Path(wiki_root) / "questions"
+    questions_dir.mkdir(parents=True, exist_ok=True)
+    questions_file = questions_dir / "toutes-les-questions.md"
+
+    block_lines = [
+        f"\n## {fiche.titre}",
+        f"[[sources/{source_slug}]]",
+    ]
+    for q in fiche.questions_ouvertes:
+        block_lines.append(f"- {q}")
+    block_lines.append("")
+
+    with questions_file.open("a", encoding="utf-8") as f:
+        f.write("\n".join(block_lines))
 
 
 # --- Test manuel ---------------------------------------------------------
