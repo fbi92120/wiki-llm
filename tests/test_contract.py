@@ -347,6 +347,9 @@ class TestTC05:
                 # Ignorer les wikilinks vers contradictions (fichier racine)
                 if target == "contradictions":
                     target_path = wiki / "contradictions.md"
+                # Ignorer les wikilinks vers YT-Knowledge/ (externe au wiki)
+                elif target.startswith("YT-Knowledge/"):
+                    continue
                 else:
                     target_path = wiki / f"{target}.md"
                 if not target_path.is_file():
@@ -451,8 +454,8 @@ class TestTC07:
         )
 
         # Identifier tous les fichiers créés ou modifiés
-        allowed_prefixes = ("sources/", "concepts/", "syntheses/", "a-traiter/")
-        allowed_root_files = ("index.md", "log.md", "contradictions.md")
+        allowed_prefixes = ("sources/", "concepts/", "syntheses/", "a-traiter/", "questions/")
+        allowed_root_files = ("index.md", "log.md", "contradictions.md", "ingest.log")
 
         violations: list[str] = []
         for f in wiki.rglob("*"):

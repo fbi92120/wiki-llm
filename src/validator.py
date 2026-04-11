@@ -235,6 +235,8 @@ def _check_r5(
             target = m.group(1)
             if target == "contradictions":
                 target_path = wiki_root / "contradictions.md"
+            elif target.startswith("YT-Knowledge/"):
+                continue
             else:
                 target_path = wiki_root / f"{target}.md"
             if not target_path.is_file():
@@ -268,8 +270,8 @@ def _check_r6(
 
 # --- R11 — Périmètre d'écriture (comparatif) -----------------------------
 
-_ALLOWED_PREFIXES = ("sources/", "concepts/", "syntheses/", "a-traiter/")
-_ALLOWED_ROOT_FILES = ("index.md", "log.md", "contradictions.md")
+_ALLOWED_PREFIXES = ("sources/", "concepts/", "syntheses/", "a-traiter/", "questions/")
+_ALLOWED_ROOT_FILES = ("index.md", "log.md", "contradictions.md", "ingest.log")
 
 
 def _check_r11(
