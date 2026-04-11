@@ -55,6 +55,7 @@ class SourceFiche:
     chaine: str = ""
     duree: str = ""
     these_centrale: str = ""
+    chapitrage_infere: str = ""
     carte_des_idees: str = ""
     concepts_cles: list[dict] = field(default_factory=list)
     formulations_notables: list[str] = field(default_factory=list)
@@ -127,18 +128,28 @@ def read_fiche(path: str | Path) -> SourceFiche:
 
     sections = _split_sections(text)
     fiche.these_centrale = sections.get("Thèse centrale", "").strip()
+    fiche.chapitrage_infere = sections.get("Chapitrage inféré", "").strip()
     fiche.carte_des_idees = sections.get("Carte des idées", "").strip()
     fiche.concepts_cles = _parse_concepts(sections.get("Concepts clés", ""))
     fiche.formulations_notables = _parse_formulations(
         sections.get("Formulations notables", "")
     )
     fiche.questions_ouvertes = _parse_questions(sections.get("Questions ouvertes", ""))
-    fiche.mes_notes = sections.get("Mes notes", "").strip()
+    fiche.mes_notes = _strip_placeholder(sections.get("Mes notes", "").strip())
 
     return fiche
 
 
 # --- Helpers internes ----------------------------------------------------
+
+
+def _strip_placeholder(text: str) -> str:
+    """Retourne chaîne vide si le texte est un placeholder YT Extractor."""
+    if text.startswith("*(espace libre)*"):
+        remainder = text[len("*(espace libre)*"):].strip()
+        if not remainder:
+            return ""
+    return text
 
 
 def _strip_transcript(text: str) -> str:
