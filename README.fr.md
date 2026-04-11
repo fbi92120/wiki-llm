@@ -80,6 +80,10 @@ wiki-llm/
     wiki-test/              # Fixtures de test (fiches -reduit.md)
 ```
 
+## Méthode
+
+Ce projet a été construit avec la méthode [Vibe Coding, Governed](https://github.com/fbi92120/vibe-coding-governed) — specs avant le code, l'humain décide, le LLM exécute.
+
 ## Architecture
 
 Voir [SPECS.md](SPECS.md) pour la spécification complète : constitution (Bloc 0), architecture (Bloc 2), prompt système (Bloc 3), comportements aux limites (Bloc 4) et stratégie de tests (Bloc 5).
