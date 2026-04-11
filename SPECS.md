@@ -108,6 +108,8 @@ vivante.
 | V2-7 | Règle création dossiers batch Evernote | Projet Export Evernote |
 | V2-8 | Tests contrat Workflow B | Projet Export Evernote |
 | V2-9 | Architecture agentique : ingestion et contrôle qualité autonomes | Après validation complète du MVP piloté |
+| V2-10 | Provider LLM : couche abstraite, Ollama local par défaut | Phase 2 |
+| V2-11 | Synthèse LLM : `## Trois idées principales`, `## Liens vers concepts transversaux` | Phase 2 |
 
 ---
 
@@ -222,6 +224,7 @@ Comportement :
 
 ```
 ## [YYYY-MM-DD] ingest | nom-source
+## [YYYY-MM-DD] batch | label
 ## [YYYY-MM-DD] query | sujet-de-la-requête
 ## [YYYY-MM-DD] contradiction | nom-concept | description courte
 ## [YYYY-MM-DD] qualite | contrôle santé du wiki
@@ -243,19 +246,30 @@ Comportement :
 
 ```markdown
 # Source — [titre court]
-**Fiche d'origine** : nom-fichier-source.md
+**Fiche d'origine** : [[YT-Knowledge/chaine/nom-fiche]]
 **Vidéo** : titre | **Chaîne** : nom | **URL** : lien | **Durée** : durée
 
 ## Thèse centrale
 
+## Chapitrage inféré
+
+## Carte des idées
+
 ## Concepts clés
 
-## Trois idées principales
+## Formulations notables
 
-## Liens vers concepts transversaux
+## Questions ouvertes
+
+## Trois idées principales          ← Phase 2 LLM
+
+## Liens vers concepts transversaux ← Phase 2 LLM
 
 ## Note personnelle
 ```
+
+Section exclue du template : `## Sources & références` (liens bruts,
+pas de valeur ajoutée dans le wiki).
 
 **Template page concept** :
 
@@ -492,6 +506,118 @@ initialisés mais sans contenu).
 - **Vault sur iCloud** : choix délibéré documenté dans `decisions.md`.
 - **Périmètre d'écriture** (règle 11) : protection structurelle contre tout
   débordement de l'agent hors de `wiki/`.
+
+---
+
+## Corrections pré-Phase 2
+
+Corrections et enrichissements à appliquer avant la Phase 2 (synthèse LLM).
+Chaque correction est décrite avec le contrat avant/après et les tests impactés.
+
+### Décision 10 — Provider LLM
+
+Couche abstraite `LLMProvider` à intégrer (même pattern que YT Extractor).
+
+| Paramètre | Valeur |
+|---|---|
+| Défaut local | Ollama + Qwen 3.5 9B |
+| Fallback batch V2 | Gemini 2.5 Flash-Lite |
+| Fallback qualité | Claude Haiku 4.5 avec prompt caching |
+| Configuration | Section `llm` dans `config.yml` |
+
+Changement de provider = une ligne dans `config.yml`. Pas de modification de code.
+
+### Décision 11 — Lecture des fiches natives
+
+**Module** : `reader.py`
+
+| Contrat | Avant | Après |
+|---|---|---|
+| Chapitrage inféré | Ignoré | Extrait dans `fiche.chapitrage_infere: str` |
+| Placeholder `*(espace libre)*` | Retourné tel quel | Retourné comme `""` (chaîne vide) |
+| Format attendu | `-reduit.md` ou natif | Natif uniquement en production |
+
+**Tests impactés** :
+- TC-03 : vérifier que `*(espace libre)*` → Note personnelle vide (pas le placeholder)
+- Nouveau test : vérifier que `chapitrage_infere` est extrait correctement
+
+### Décision 12 — Nouveau template page source wiki
+
+**Module** : `source_writer.py`
+
+Sections copiées verbatim depuis la fiche :
+
+| Section | Statut |
+|---|---|
+| `## Thèse centrale` | Déjà présent |
+| `## Chapitrage inféré` | **Nouveau** |
+| `## Carte des idées` | **Nouveau** |
+| `## Concepts clés` | Déjà présent |
+| `## Formulations notables` | **Nouveau** |
+| `## Questions ouvertes` | **Nouveau** |
+| `## Note personnelle` | Déjà présent |
+
+Sections réservées Phase 2 LLM (placeholder) :
+- `## Trois idées principales`
+- `## Liens vers concepts transversaux`
+
+Lien fiche complète : `**Fiche d'origine** : [[YT-Knowledge/chaine/nom-fiche]]`
+
+Section exclue : `## Sources & références`.
+
+**Tests impactés** :
+- TC-03 (verbatim) : inchangé
+- Test smoke assertion 2 : mettre à jour la liste des sections du template
+
+### Décision 13 — wiki/questions/
+
+**Module** : `source_writer.py`
+
+Nouveau dossier `wiki/questions/` avec fichier `toutes-les-questions.md`
+(append-only).
+
+Format :
+```markdown
+## [titre court de la source]
+[[sources/slug-source]]
+- question 1 verbatim
+- question 2 verbatim
+- question 3 verbatim
+```
+
+Alimenté par `source_writer.py` à chaque ingestion.
+
+**Règle 16** (à ajouter à CLAUDE.md) :
+`wiki/questions/toutes-les-questions.md` append-only. Chaque ingestion
+y ajoute les questions ouvertes verbatim avec lien vers la page source wiki.
+
+**Tests à créer** :
+- TC-13 : après ingestion, `toutes-les-questions.md` contient les questions
+  de la fiche avec le lien `[[sources/slug]]`
+- TC-07 (R11) : ajouter `questions/` au périmètre d'écriture autorisé
+
+### Bug R11 — ingest.log
+
+**Module** : `validator.py`
+
+Exclure `ingest.log` du check R11 (périmètre d'écriture). C'est un log
+technique, pas du contenu wiki.
+
+| Contrat | Avant | Après |
+|---|---|---|
+| `ingest.log` modifié | Warning R11 | Ignoré silencieusement |
+
+**Test impacté** : TC-07 — ajouter `ingest.log` à la liste des fichiers autorisés.
+
+### Ré-ingestion après corrections
+
+Une fois toutes les corrections appliquées :
+
+1. Effacer `wiki/sources/`, `wiki/concepts/`, `wiki/questions/`
+2. Vider `index.md`, `log.md`, `contradictions.md` (remettre à l'état bootstrap)
+3. Ré-ingérer les sources existantes depuis `YT-Knowledge/` (`./ingestwiki.py`)
+4. Vérifier 23/23 tests + validation complète
+5. Commit unique : `reingest: post-corrections Phase 2`
 
 ---
 
