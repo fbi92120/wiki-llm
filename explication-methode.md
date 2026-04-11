@@ -218,7 +218,7 @@ Les tests concernant le Workflow B (Evernote) sont reportés en V2
 
 ```
 ~/.claude/CLAUDE.md              → principes universels (depuis YT Extractor)
-~/Projects/CLAUDE.md             → conventions communes
+~/Projects/CLAUDE.projects.md    → conventions communes
 ~/Projects/wiki-llm/CLAUDE.md   → constitution Wiki LLM
 ~/Projects/wiki-llm/wiki-test/  → 3 fiches sources de test
 ~/Projects/wiki-llm/wiki/       → premier wiki vivant
