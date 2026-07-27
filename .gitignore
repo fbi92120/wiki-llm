@@ -4,5 +4,6 @@ config.yml
 __pycache__/
 .DS_Store
 .pytest_cache/
-wiki/.obsidian/
-wiki/ingest.log
+# Vault généré par l'outil (contenu dérivé de vidéos tierces + notes perso) — non versionné
+wiki/
+wiki-test/

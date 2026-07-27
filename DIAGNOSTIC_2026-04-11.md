@@ -17,7 +17,7 @@ validateur devrait l'exclure.
 
 ## 2. Structure yt-knowledge-extractor
 
-- Ecrit dans `/Users/USER/Library/Mobile Documents/iCloud~md~obsidian/Documents/YT-Knowledge/` en mode obsidian.
+- Ecrit dans le vault Obsidian configuré (`<vault>/YT-Knowledge/`) en mode obsidian.
 - Organise par sous-dossier = slug de la chaine YouTube.
 - Produit des **fiches completes** (pas de `-reduit`). Le format `-reduit` n'est pas genere automatiquement — il a ete cree manuellement pour les fixtures.
 
