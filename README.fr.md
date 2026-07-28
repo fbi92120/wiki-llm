@@ -14,16 +14,18 @@ Les fichiers sources (résumés de transcripts YouTube au format `-reduit.md`) s
 
 - Python 3.9+
 - git
-- pytest (uniquement pour les tests)
+- PyYAML (runtime — lecture de la config)
+- pytest + pytest-cov (uniquement pour les tests)
 
 ## Installation
 
 ```bash
 git clone <url-du-repo> && cd wiki-llm
-pip install pytest  # uniquement pour lancer les tests
+pip install -r requirements.txt
 ```
 
-Aucune dépendance runtime en dehors de la bibliothèque standard Python.
+Dépendance runtime : PyYAML (lecture de `config.yml`). Dépendances de test :
+pytest et pytest-cov. Voir `requirements.txt`.
 
 ## Utilisation
 

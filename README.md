@@ -14,16 +14,18 @@ Source files (YouTube transcript summaries in `-reduit.md` format) are ingested 
 
 - Python 3.9+
 - git
-- pytest (tests only)
+- PyYAML (runtime — config parsing)
+- pytest + pytest-cov (tests only)
 
 ## Installation
 
 ```bash
 git clone <repo-url> && cd wiki-llm
-pip install pytest  # only needed to run tests
+pip install -r requirements.txt
 ```
 
-No runtime dependencies beyond the Python standard library.
+Runtime dependency: PyYAML (used to read `config.yml`). Test dependencies:
+pytest and pytest-cov. See `requirements.txt`.
 
 ## Usage
 
