@@ -7,3 +7,8 @@ __pycache__/
 # Vault généré par l'outil (contenu dérivé de vidéos tierces + notes perso) — non versionné
 wiki/
 wiki-test/
+
+# Couverture de tests (pytest-cov / coverage.py)
+.coverage
+.coverage.*
+htmlcov/
