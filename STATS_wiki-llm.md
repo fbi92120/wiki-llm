@@ -63,11 +63,45 @@ Vérification de l'état courant **et** de l'historique git.
 ## Autres mesures (critères de livraison)
 
 - **Modules source** (.py hors test) : 10
-- **Dépendances runtime** : aucune hors bibliothèque standard Python (pas de `requirements.txt` ; confirmé par le README)
+- **Dépendances runtime** : 1 (pyyaml, importée dans `ingestwiki.py` pour lire `config.yml`) + pytest + pytest-cov (tests). Déclarées dans `requirements.txt` (introduit le 2026-07-29 ; auparavant absent, et le README affirmait à tort « aucune dépendance runtime hors stdlib » — corrigé le même jour).
 - **Ratio documentation / code** : 0,64 : 1 (2688 lignes `.md` de documentation hors vault généré, pour 4172 lignes `.py`)
 - **Annotations de type** : présentes (74 occurrences `->` / `from __future__ import annotations`)
 - **Packaging installable** : absent
 - **Intégration continue** : absente
 - **Outillage lint / format / typecheck** : absent
 - **LICENSE** : absent
+
+---
+
+## Couverture de tests (`pytest --cov`)
+
+*Mesure du 2026-07-29. Commande : `pytest --cov=src`.*
+*Nécessite `pytest-cov` (déclaré dans `requirements.txt` depuis le 2026-07-29).*
+
+Résultat de collecte : **25 passed** en ~1 s.
+
+**Couverture globale : 53 %** (907 instructions, 426 non couvertes).
+
+```
+Name                           Stmts   Miss  Cover
+--------------------------------------------------
+src/__init__.py                    0      0   100%
+src/concept_writer.py            130     54    58%
+src/contradiction_manager.py     108     54    50%
+src/index_manager.py             105     36    66%
+src/log_manager.py                47     26    45%
+src/reader.py                    160     32    80%
+src/reset_wiki.py                 45     45     0%
+src/source_writer.py             127     25    80%
+src/validator.py                 185    154    17%
+--------------------------------------------------
+TOTAL                            907    426    53%
+```
+
+Lecture : couverture nettement plus basse que les deux autres dépôts (53 %
+contre 84 % et 90 %). Points les plus bas : `src/reset_wiki.py` (0 % — jamais
+exercé par la suite), `src/validator.py` (17 %) et `src/log_manager.py` (45 %).
+Le périmètre mesuré est `src/` uniquement ; `ingestwiki.py` (orchestrateur à la
+racine) n'est pas couvert par `--cov=src`. À traiter comme piste de renforcement
+des tests, pas dans ce geste.
 
